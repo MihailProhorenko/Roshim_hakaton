@@ -1,0 +1,58 @@
+feature,importance,label
+log_target,11.231988413565158,log_target
+vol_52,9.08187041775364,vol_52
+change_52,8.830524943744573,change_52
+horizon,8.41884309458205,horizon
+vol_26,7.848193099068434,vol_26
+mean_gap_26,6.506642119310766,mean_gap_26
+brent_divergence_13,5.763265851127968,brent_divergence_13
+sin,5.758008262204766,sin
+mean_gap_52,5.488237399313701,mean_gap_52
+change_26,3.8080790714130157,change_26
+change_13,3.1297930861249843,change_13
+mean_gap_13,2.7590061386242657,mean_gap_13
+change_8,2.428641133017394,change_8
+pvc_divergence_4,1.7120389006445365,pvc_divergence_4
+ethylene_divergence_13,1.597529957498743,ethylene_divergence_13
+pvc_return_13,1.5781471088297108,pvc_return_13
+brent_return_13,1.528275317113187,brent_return_13
+cos,1.403113377415158,cos
+mean_gap_4,1.1844505824986096,mean_gap_4
+ethylene_return_4,0.8674396244511153,ethylene_return_4
+external_2f59fc9208d3,0.8670178618762177,PVC Pipe Grade FOB Laem Chabang
+external_787d085c7d63,0.7544864711375683,PVC Suspension Flexible GradeK67 EXW-Rayong
+vol_13,0.7037935585862756,vol_13
+change_2,0.6631921025419724,change_2
+change_1,0.5675138530685526,change_1
+ethylene_return_13,0.5206154216100023,ethylene_return_13
+naphtha_divergence_1,0.4424783408340477,naphtha_divergence_1
+brent_return_4,0.4103953631843636,brent_return_4
+naphtha_return_4,0.3983267505116043,naphtha_return_4
+ethylene_divergence_4,0.3951162615397013,ethylene_divergence_4
+pvc_return_1,0.3494249129306913,pvc_return_1
+change_4,0.3440153262132869,change_4
+pvc_divergence_1,0.33757399286556883,pvc_divergence_1
+pvc_return_4,0.32458107777820333,pvc_return_4
+vol_4,0.31474891764139445,vol_4
+external_46625f18fd05,0.30059786916541087,PVC Suspension GP K67 FOB Busan
+naphtha_divergence_13,0.2837749993340792,naphtha_divergence_13
+external_cce990db4958,0.25567463952553005,PVC Semi Rigid Grade K67 EXW-Rayong
+naphtha_return_13,0.21428880670849204,naphtha_return_13
+naphtha_divergence_4,0.19484007109021684,naphtha_divergence_4
+external_7adb4d46d4eb,0.16713501832814995,Ethylene CFR Bangkok
+naphtha_return_1,0.0904003818841097,naphtha_return_1
+pvc_divergence_13,0.060604382192439056,pvc_divergence_13
+ethylene_return_1,0.03871963658515633,ethylene_return_1
+ethylene_divergence_1,0.036368661450096644,ethylene_divergence_1
+brent_divergence_4,0.017542864835633536,brent_divergence_4
+brent_return_1,0.011863457324680296,brent_return_1
+unchanged_weeks,0.010821100954791383,unchanged_weeks
+observed,0.0,observed
+external_787d085c7d63_missing,0.0,external_787d085c7d63_missing
+external_86623e16a32b,0.0,PVC Pipe Grade CFR Ho Chi Minh
+external_7adb4d46d4eb_missing,0.0,external_7adb4d46d4eb_missing
+external_2f59fc9208d3_missing,0.0,external_2f59fc9208d3_missing
+external_46625f18fd05_missing,0.0,external_46625f18fd05_missing
+external_cce990db4958_missing,0.0,external_cce990db4958_missing
+external_86623e16a32b_missing,0.0,external_86623e16a32b_missing
+brent_divergence_1,0.0,brent_divergence_1

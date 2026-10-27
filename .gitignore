@@ -1,6 +1,7 @@
 .venv/
 __pycache__/
 data/raw/*
+!data/raw/.gitkeep
 data/processed/
 artifacts/*
 !artifacts/submission.csv
@@ -11,4 +12,13 @@ artifacts/*
 !artifacts/validation_folds.csv
 !artifacts/strategy_validation.csv
 !artifacts/run_metadata.json
+!artifacts/prequential_scores.csv
+!artifacts/horizon_metrics.csv
+!artifacts/balanced_horizon_metrics.csv
+!artifacts/revision_metrics.csv
+!artifacts/interval_metrics.csv
+!artifacts/ablation_metrics.csv
+!artifacts/error_by_horizon.svg
+!artifacts/forecast_revision.svg
+!artifacts/feature_importance.csv
 .streamlit/

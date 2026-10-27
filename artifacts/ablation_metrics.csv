@@ -1,0 +1,4 @@
+base,external,blocks,base_smape,external_smape,improvement_pp,improved_blocks
+ridge,ridge_external,20,5.355668941681943,6.955749377850727,-1.6000804361687848,5
+catboost,catboost_external,20,5.004532306750233,5.589553166760609,-0.5850208600103752,8
+catboost_mae,catboost_mae_external,20,4.902514902366988,4.999967542145901,-0.09745263977891346,10
