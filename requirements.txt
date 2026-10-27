@@ -1,0 +1,7 @@
+numpy==2.3.5
+pandas==2.2.3
+scikit-learn==1.8.0
+scipy==1.17.0
+pyxlsb==1.0.10
+statsmodels==0.14.6
+streamlit==1.55.0

@@ -1,0 +1,22 @@
+{
+  "target": "ПВХ SG-5 (Китай) DAP Достык, USD/т",
+  "model": "holt",
+  "rows": 36293,
+  "series": 170,
+  "target_observations": 551,
+  "target_calendar_weeks": 564,
+  "target_missing_weeks": 13,
+  "target_last_date": "2026-07-03",
+  "source_last_date": "2026-07-06",
+  "input_sha256": "ee11ec331803d8737f5eed1eb1e8dfa62b5a869ac144acf7e2639164b64dffe1",
+  "validation_blocks": 8,
+  "horizon": 13,
+  "calendar_note": "Weekly Friday observations; week_start is the containing Monday.",
+  "limitations": [
+    "Official dates and scorer pending confirmation.",
+    "Selection uses first six blocks; last two blocks are outer evaluation.",
+    "Intervals estimated on six blocks have limited calibration evidence.",
+    "Report dates are assumed to be availability dates.",
+    "Source rows after last target Friday are excluded from model features."
+  ]
+}

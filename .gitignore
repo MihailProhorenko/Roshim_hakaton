@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+data/raw/*
+data/processed/
+artifacts/*
+!artifacts/submission.csv
+!artifacts/strategy.csv
+!artifacts/forecast_details.csv
+!artifacts/leaderboard.csv
+!artifacts/model_selection.csv
+!artifacts/validation_folds.csv
+!artifacts/strategy_validation.csv
+!artifacts/run_metadata.json
+.streamlit/
