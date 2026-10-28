@@ -9,12 +9,18 @@
   "target_last_date": "2026-07-03",
   "source_last_date": "2026-07-06",
   "input_sha256": "ee11ec331803d8737f5eed1eb1e8dfa62b5a869ac144acf7e2639164b64dffe1",
-  "code_hash": "1ea1e3c51788",
+  "code_hash": "21f5e5a75779",
   "validation_blocks": 24,
   "evaluation_blocks": 20,
   "horizon": 13,
   "selection_rule": "Lowest mean sMAPE on last 8 fully completed blocks; first 4 blocks warm-up.",
-  "calendar_note": "Weekly Friday observations; week_start is the containing Monday.",
+  "calendar_note": "Official templates: week_start is Friday, 2026-07-10 through 2026-10-02.",
+  "submission_separator": ";",
+  "submission_encoding": "utf-8-sig",
+  "interval_nominal_level": 0.9,
+  "deadline_moscow": "2026-10-29 21:00",
+  "submission_protocol": "Fixed origin; no weekly revisions in competition.",
+  "grading": "sMAPE(naive) - sMAPE(model), percentage points; exact points not inferred from overlapping bands.",
   "interval_coverage": 0.9408602150537635,
   "interval_n": 186,
   "strategy_threshold": 0.01,
@@ -28,6 +34,7 @@
     "Report dates assumed to be availability dates; values older than 45 days excluded.",
     "Contract scenarios excluded due to ambiguous same-date observations.",
     "Intervals are empirical, dependent and regime-sensitive; coverage is measured, not guaranteed.",
-    "Official CSV calendar pending template; model features end at last target observation."
+    "Official scoring scripts not supplied; no interim organizer scoring.",
+    "Forecast features end at last target observation."
   ]
 }

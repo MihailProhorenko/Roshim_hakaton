@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from baseline import ROOT, load, H
 from models import forecast
+from submission import validate
 
 
 def main():
@@ -14,14 +15,18 @@ def main():
     path=ROOT/'data/raw/predictors.xlsb'
     assert hashlib.sha256(path.read_bytes()).hexdigest()==meta['input_sha256']
     _,_,y,wide=load(path)
-    submission=pd.read_csv(out/'submission.csv')
-    positions=pd.read_csv(out/'strategy.csv')
+    submission=pd.read_csv(out/'forecast.csv',sep=';',encoding='utf-8-sig')
+    positions=pd.read_csv(out/'strategy.csv',sep=';',encoding='utf-8-sig')
+    validate(submission,positions)
+    assert (out/'forecast.csv').read_bytes().startswith(b'\xef\xbb\xbf')
+    assert (out/'strategy.csv').read_bytes().startswith(b'\xef\xbb\xbf')
+    assert (out/'submission.csv').read_bytes()==(out/'forecast.csv').read_bytes()
     assert len(submission)==len(positions)==H
     assert submission.horizon.tolist()==list(range(1,H+1))
     assert submission.week_start.equals(positions.week_start)
     assert set(positions.position).issubset({-1,0,1})
     assert np.isfinite(submission.forecast).all() and (submission.forecast>0).all()
-    expected=pd.date_range(y.index[-1]+pd.Timedelta(days=3),periods=H,freq='7D')
+    expected=pd.date_range(y.index[-1]+pd.Timedelta(days=7),periods=H,freq='7D')
     assert submission.week_start.tolist()==expected.strftime('%Y-%m-%d').tolist()
     reproduction=forecast(meta['model'],y,wide)
     np.testing.assert_allclose(reproduction,submission.forecast,rtol=1e-10)

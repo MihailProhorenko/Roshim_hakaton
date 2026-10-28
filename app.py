@@ -9,6 +9,7 @@ ART=Path(__file__).resolve().parent/'artifacts'
 st.set_page_config(page_title='ПВХ · прогноз и решения',layout='wide')
 st.title('ПВХ · прогноз и решения')
 st.caption('SG-5 (Китай), DAP Достык · анонимизированный индекс k · 13 недель')
+st.caption('Сдача: 29 октября, 21:00 по Москве. Прогноз и позиции фиксируются один раз; пересчёт — отдельное исследование.')
 required=['run_metadata.json','forecast_details.csv','target_history.csv','prequential_scores.csv',
           'horizon_metrics.csv','balanced_horizon_metrics.csv','revision_metrics.csv','interval_metrics.csv','ablation_metrics.csv']
 if not all((ART/name).exists() for name in required):
@@ -38,7 +39,7 @@ with tabs[0]:
     if meta['model']=='naive':
         st.info('По принятому правилу выбора сложные модели не превзошли сохранение последней цены на последних восьми исторических окнах. Плоский прогноз отражает отсутствие подтверждённого направленного сигнала.')
     st.dataframe(future.rename(columns={'forecast':'Прогноз','position':'Позиция','lower':'Нижняя граница','upper':'Верхняя граница'}),hide_index=True,width='stretch')
-    for name in ['submission.csv','strategy.csv']:
+    for name in ['forecast.csv','strategy.csv']:
         st.download_button(f'Скачать {name}',(ART/name).read_bytes(),file_name=name,mime='text/csv')
 
 with tabs[1]:
@@ -47,6 +48,9 @@ with tabs[1]:
     a,b=st.columns(2)
     a.metric('Последовательный выбор · sMAPE',f'{comparison.adaptive_smape.mean():.2f}%')
     b.metric('Naive на тех же блоках · sMAPE',f'{comparison.naive_smape.mean():.2f}%')
+    recent=pd.read_csv(ART/'model_selection.csv').set_index('model').smape
+    gap=float(recent['naive']-recent[meta['model']])
+    st.write(f'Отрыв выбранной модели от naive на последних восьми окнах выбора: {gap:+.3f} п.п. Положительное значение означает меньший sMAPE. Это исторический результат, не конкурсный балл.')
     if comparison.adaptive_smape.mean()>=comparison.naive_smape.mean():
         st.warning('Переключение моделей на этой исторической проверке уступило naive. Улучшение точности не подтверждено.')
     balanced=st.toggle('Одинаковые блоки для всех горизонтов',value=True)

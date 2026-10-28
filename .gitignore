@@ -5,6 +5,8 @@ data/raw/*
 data/processed/
 artifacts/*
 !artifacts/submission.csv
+!artifacts/forecast.csv
+!artifacts/naive_gap_by_fold.csv
 !artifacts/strategy.csv
 !artifacts/forecast_details.csv
 !artifacts/leaderboard.csv

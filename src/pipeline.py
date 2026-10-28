@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 
 from baseline import ROOT, H, load, smape, risk, strategy, features
 from models import NAMES, forecast, error_scale, design
+from submission import export as export_submission
 
 
 def block_origins(y, count=24):
@@ -134,6 +135,9 @@ def main(path, refresh=True):
     detail.to_csv(out/'validation_predictions.csv',index=False)
     score.to_csv(out/'validation_folds.csv',index=False)
     score.groupby('model').smape.agg(['mean','median','std','max']).sort_values('mean').to_csv(out/'leaderboard.csv')
+    gap_table=score.merge(score[score.model.eq('naive')][['origin','smape']].rename(columns={'smape':'naive_smape'}),on='origin')
+    gap_table['gap_pp']=gap_table.naive_smape-gap_table.smape
+    gap_table.to_csv(out/'naive_gap_by_fold.csv',index=False)
     # Last eight completed blocks determine FINAL model, not the historical choices.
     name = select_model(scores, len(y))
     last_origins = origins[-8:]
@@ -254,13 +258,11 @@ def main(path, refresh=True):
     widths=np.array([conformal_width([r['score'] for r in calibration if r['model']==name and r['horizon']==h][-20:],scale)
                      for h in range(1,H+1)])
     dates=pd.date_range(y.index[-1]+pd.Timedelta(days=7),periods=H,freq='7D')
-    weeks=dates-pd.to_timedelta(dates.weekday,unit='D')
-    submission=pd.DataFrame(dict(week_start=weeks.strftime('%Y-%m-%d'),horizon=np.arange(1,H+1),forecast=final))
-    submission.to_csv(out/'submission.csv',index=False)
+    submission=pd.DataFrame(dict(week_start=dates.strftime('%Y-%m-%d'),horizon=np.arange(1,H+1),forecast=final))
     positions=strategy(final,float(y.iloc[-1]),threshold)
-    pd.DataFrame(dict(week_start=submission.week_start,position=positions)).to_csv(out/'strategy.csv',index=False)
-    submission.assign(observation_date=dates.strftime('%Y-%m-%d'),lower=np.maximum(0.,final-widths),upper=final+widths,
-                      position=positions).to_csv(out/'forecast_details.csv',index=False)
+    forecast_details=submission.assign(observation_date=dates.strftime('%Y-%m-%d'),lower=np.maximum(0.,final-widths),upper=final+widths,
+                                      position=positions)
+    export_submission(forecast_details,out=out)
     coverage=evaluated[evaluated.lower.notna()].copy()
     covered=(coverage.actual>=coverage.lower)&(coverage.actual<=coverage.upper)
     interval_rows=[]
@@ -277,7 +279,10 @@ def main(path, refresh=True):
                   source_last_date=str(frame.report_date.max().date()),input_sha256=source_hash,
                   code_hash=code_hash,validation_blocks=len(origins),evaluation_blocks=len(comparison),horizon=H,
                   selection_rule='Lowest mean sMAPE on last 8 fully completed blocks; first 4 blocks warm-up.',
-                  calendar_note='Weekly Friday observations; week_start is the containing Monday.',
+                  calendar_note='Official templates: week_start is Friday, 2026-07-10 through 2026-10-02.',
+                  submission_separator=';',submission_encoding='utf-8-sig',interval_nominal_level=.9,
+                  deadline_moscow='2026-10-29 21:00',submission_protocol='Fixed origin; no weekly revisions in competition.',
+                  grading='sMAPE(naive) - sMAPE(model), percentage points; exact points not inferred from overlapping bands.',
                   interval_coverage=float(covered.mean()) if len(coverage) else None,interval_n=len(coverage),
                   strategy_threshold=threshold,
                   strategy_pnl=float(pnl_frame.pnl.sum()),buy_hold_pnl=float(pnl_frame.buy_hold.sum()),
@@ -287,7 +292,8 @@ def main(path, refresh=True):
                                'Report dates assumed to be availability dates; values older than 45 days excluded.',
                                'Contract scenarios excluded due to ambiguous same-date observations.',
                                'Intervals are empirical, dependent and regime-sensitive; coverage is measured, not guaranteed.',
-                               'Official CSV calendar pending template; model features end at last target observation.'])
+                               'Official scoring scripts not supplied; no interim organizer scoring.',
+                               'Forecast features end at last target observation.'])
     (out/'run_metadata.json').write_text(json.dumps(metadata,ensure_ascii=False,indent=2))
     plot_diagnostics(out,balanced,revision_table)
     write_report(out,metadata,comparison,balanced,revision_table)
@@ -341,7 +347,14 @@ def write_report(out,metadata,comparison,horizons,revisions):
             f"Исторический P&L: {metadata['strategy_pnl']:.5f}; buy & hold: {metadata['buy_hold_pnl']:.5f} условных единиц.",
             f"Просадка: {metadata['strategy_drawdown']:.5f}; buy & hold: {metadata['buy_hold_drawdown']:.5f}.",
             'Порог стратегии выбирается по прошлым завершённым блокам, по критерию P&L минус максимальная просадка.',
-            'P&L учитывает только переходы с наблюдаемыми ценами на обеих соседних неделях. Это не эффект в рублях и не процент доходности.','']
+            'P&L учитывает только переходы с наблюдаемыми ценами на обеих соседних неделях. Это не эффект в рублях и не процент доходности.','',
+            '## Условия сдачи, подтверждённые 28 октября','',
+            'Дедлайн — 29 октября, 21:00 по Москве. Прогноз и 13 позиций фиксируются один раз.',
+            'forecast.csv: week_start;horizon;forecast;forecast_lower;forecast_upper.',
+            'strategy.csv: week_start;position. Даты — пятницы 10.07–02.10.2026, как в официальном шаблоне.',
+            'Новая шкала точности основана на отрыве sMAPE(naive) − sMAPE(модели) в процентных пунктах.',
+            'Указанные диапазоны пересекаются около ±0,3 п.п.; точные баллы без пояснения комиссии не присваиваем.',
+            'Промежуточной проверки организаторов нет; оцениваются последние полученные файлы.','']
     (ROOT/'docs'/'RESULTS.md').write_text('\n'.join(lines))
 
 
