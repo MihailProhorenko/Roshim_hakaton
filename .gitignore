@@ -26,5 +26,6 @@ artifacts/*
 !artifacts/final_model_comparison.csv
 !artifacts/final_model_folds.csv
 !artifacts/final_strategy_comparison.csv
+!artifacts/final_strategy_folds.csv
 deliverables/
 .streamlit/

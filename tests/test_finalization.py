@@ -45,6 +45,24 @@ class FinalizationSafetyTests(unittest.TestCase):
         self.assertEqual(pnl[5],0.)
         self.assertEqual(pnl[6],-99.)
 
+    def test_capped_strategy_uses_strongest_forecast_signal_only(self):
+        prediction=np.r_[1.02,1.05,np.repeat(1.05,11)]
+        errors=[[.02]*8 for _ in range(13)]
+        pos=positions_for('confidence_half_cap1',prediction,1.,prediction,prediction,errors,.005)
+        self.assertEqual(np.count_nonzero(pos),1)
+        self.assertEqual(pos[1],1)
+
+    def test_capped_strategy_waits_for_calibration(self):
+        prediction=np.linspace(1.,2.,13)
+        pos=positions_for('confidence_half_cap1',prediction,1.,prediction,prediction,[[] for _ in range(13)],.005)
+        self.assertTrue(np.all(pos==0))
+
+    def test_positive_total_does_not_override_negative_early_period(self):
+        row=dict(rule='confidence_half_cap1',pnl=.1,stress_pnl=.08,profitable_blocks=5,
+                 largest_positive_fraction=.37,stress_utility=.05,trades=12,
+                 stress_without_best_block=.02,stress_first12=-.001,stress_recent8=.081)
+        self.assertEqual(choose_strategy(pd.DataFrame([row])),'flat')
+
 
 if __name__=='__main__':
     unittest.main()

@@ -18,7 +18,10 @@
     "flat",
     "threshold",
     "agreement",
-    "confidence"
+    "confidence",
+    "confidence_half",
+    "confidence_cap1",
+    "confidence_half_cap1"
   ],
   "strategy_threshold": 0.005,
   "strategy_acceptance": "positive net P&L, at least 3 profitable blocks, no single block > half total positive gains; else flat",
@@ -28,5 +31,7 @@
   ],
   "commission_note": "Hypothetical turnover cost for sensitivity only; official scorer has not specified costs",
   "freeze_deadline_moscow": "2026-10-29 20:00",
-  "decision_note": "Preserve incumbent unless a candidate does not worsen any checked summary, including the recent selection windows."
+  "decision_note": "Preserve incumbent unless a candidate does not worsen any checked summary, including the recent selection windows.",
+  "strategy_reopen_note": "User requested a bounded active-strategy retry. Three risk variants added; original positive-PnL, stress, profitable-block and <=50% concentration guards remain unchanged.",
+  "risk_cap": "For cap1 variants at most one active week per 13-week block; rank by forecast change divided by historical-error threshold, known at origin."
 }

@@ -7,7 +7,7 @@ import pandas as pd
 from baseline import ROOT, load, H
 from models import forecast
 from submission import validate
-from finalize import final_predict
+from finalize import final_predict,positions_for
 
 
 def main():
@@ -37,6 +37,29 @@ def main():
         if meta['final_strategy']=='flat':
             assert positions.position.eq(0).all()
             assert meta['strategy_pnl']==0 and meta['strategy_drawdown']==0
+        else:
+            backtest=pd.read_csv(out/'final_strategy_backtest.csv')
+            assert np.isclose(backtest.pnl.sum(),meta['strategy_pnl'],atol=1e-12)
+            assert np.isclose(backtest.stress_pnl.sum(),meta['strategy_stress_pnl'],atol=1e-12)
+            if 'cap1' in meta['final_strategy']:
+                assert backtest.groupby('origin').position.apply(lambda p:np.count_nonzero(p)).le(1).all()
+            errors=[[] for _ in range(H)]
+            history=pd.read_csv(out/'validation_predictions.csv',float_precision='round_trip')
+            history=history[history.model.eq(meta['model'])]
+            for origin,g in history.groupby('origin',sort=True):
+                g=g.sort_values('horizon')
+                previous=float(g.previous.iloc[0])
+                actual_change=np.diff(np.r_[previous,g.actual.to_numpy()])/previous
+                predicted_change=np.diff(np.r_[previous,g.forecast.to_numpy()])/previous
+                for horizon in range(H):
+                    if np.isfinite(actual_change[horizon]):
+                        errors[horizon].append(abs(actual_change[horizon]-predicted_change[horizon]))
+            expected_positions=positions_for(meta['final_strategy'],reproduction,float(y.iloc[-1]),
+                                             forecast('catboost_mae',y,wide),forecast('catboost_mae_external',y,wide),
+                                             errors,float(meta['strategy_threshold']))
+            np.testing.assert_array_equal(expected_positions,positions.position)
+            if 'cap1' in meta['final_strategy']:
+                assert np.count_nonzero(expected_positions)<=1
     balanced=pd.read_csv(out/'balanced_horizon_metrics.csv')
     assert balanced.groupby('model').n.nunique().eq(1).all()
     revisions=pd.read_csv(out/'revision_predictions.csv')

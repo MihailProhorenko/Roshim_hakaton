@@ -43,6 +43,9 @@ def choose_strategy(table):
     # No active rule is accepted merely for losing less than buy-and-hold.
     valid=table[(table.rule!='flat')&(table.pnl>0)&(table.stress_pnl>0)&
                 (table.profitable_blocks>=3)&(table.largest_positive_fraction<=.5)]
+    for column in ['stress_without_best_block','stress_first12','stress_recent8']:
+        if column in valid:
+            valid=valid[valid[column]>0]
     return 'flat' if valid.empty else valid.sort_values(['stress_utility','trades'],ascending=[False,True]).rule.iloc[0]
 
 
@@ -59,6 +62,16 @@ def positions_for(rule,prediction,previous,first,second,errors,threshold=.005):
     if rule=='confidence':
         uncertainty=np.array([max(threshold,float(np.median(e))) if len(e)>=4 else np.inf for e in errors])
         return np.where(np.abs(change)>uncertainty,np.sign(change),0).astype(int)
+    if rule in ['confidence_half','confidence_cap1','confidence_half_cap1']:
+        alpha=.5 if 'half' in rule else 1.
+        uncertainty=np.array([max(threshold,alpha*float(np.median(e))) if len(e)>=4 else np.inf for e in errors])
+        active=np.flatnonzero(np.abs(change)>uncertainty)
+        # All 13 forecasts are known at the origin. Rank signals, never future P&L.
+        if 'cap1' in rule:
+            active=active[np.argsort(-np.abs(change[active])/uncertainty[active],kind='stable')][:1]
+        positions=np.zeros(H,dtype=int)
+        positions[active]=np.sign(change[active]).astype(int)
+        return positions
     raise ValueError(rule)
 
 
@@ -108,10 +121,12 @@ def main(rebuild=False):
     gains={rule:[] for rule in rules}
     stresses={rule:[] for rule in rules}
     activity={rule:0 for rule in rules}
+    block_activity={rule:[] for rule in rules}
     change_errors=[[] for _ in range(H)]
     calibration=[[] for _ in range(H)]
     interval_rows=[]
     calibration_rows=[]
+    strategy_details=[]
     for origin in all_origins:
         origin=int(origin)
         previous=float(y.iloc[origin-1])
@@ -135,6 +150,12 @@ def main(rebuild=False):
                 gains[rule].append(float(pnl.sum()))
                 stresses[rule].extend(stress)
                 activity[rule]+=trades
+                block_activity[rule].append(trades)
+                for h in range(H):
+                    strategy_details.append(dict(rule=rule,origin=int(origin),
+                                                 origin_date=str(y.index[origin-1].date()),
+                                                 target_date=str(y.index[origin+h].date()),horizon=h+1,
+                                                 position=int(positions[h]),pnl=float(pnl[h]),stress_pnl=float(stress[h])))
         # Calibration update occurs only after the entire block is complete.
         truth_change=np.diff(np.r_[previous,truth])/previous
         forecast_change=np.diff(np.r_[previous,prediction])/previous
@@ -146,14 +167,26 @@ def main(rebuild=False):
     strategy_rows=[]
     for rule in rules:
         positive=[g for g in gains[rule] if g>0]
+        stress_blocks=np.array(stresses[rule]).reshape(-1,H).sum(axis=1)
         strategy_rows.append(dict(rule=rule,pnl=float(np.sum(records[rule])),drawdown=risk(records[rule]),
                                   stress_pnl=float(np.sum(stresses[rule])),stress_utility=float(np.sum(stresses[rule])-risk(stresses[rule])),
+                                  stress_drawdown=risk(stresses[rule]),
+                                  stress_without_best_block=float(stress_blocks.sum()-stress_blocks.max()),
+                                  stress_first12=float(stress_blocks[:12].sum()),stress_recent8=float(stress_blocks[-8:].sum()),
+                                  max_active_weeks_per_block=max(block_activity[rule]),
                                   profitable_blocks=len(positive),losing_blocks=sum(g<0 for g in gains[rule]),
                                   largest_positive_fraction=max(positive)/sum(positive) if positive else 1.,trades=activity[rule]))
     strategies=pd.DataFrame(strategy_rows)
     chosen=choose_strategy(strategies)
     strategies['selected']=strategies.rule.eq(chosen)
     strategies.to_csv(out/'final_strategy_comparison.csv',index=False)
+    selected_backtest=pd.DataFrame(strategy_details)
+    selected_backtest=selected_backtest[selected_backtest.rule.eq(chosen)]
+    selected_backtest.to_csv(out/'final_strategy_backtest.csv',index=False)
+    selected_backtest.to_csv(out/'strategy_backtest.csv',index=False)
+    selected_backtest.groupby(['origin','origin_date']).agg(
+        pnl=('pnl','sum'),stress_pnl=('stress_pnl','sum'),active_weeks=('position',lambda p:int(np.count_nonzero(p)))
+    ).to_csv(out/'final_strategy_folds.csv')
     # No test facts enter final fit. Frozen candidate is fit to the full official history.
     prediction=final_predict(name,y,wide)
     if name.startswith('catboost'):
@@ -175,18 +208,28 @@ def main(rebuild=False):
     chosen_strategy=strategies.set_index('rule').loc[chosen]
     naive=comparison.set_index('model').loc['naive']
     selected=comparison.set_index('model').loc[name]
-    meta.update(model=name,finalized=True,finalization_version='2026-10-29-v1',
+    meta.update(model=name,finalized=True,finalization_version='2026-10-29-v2',
                 finalization_config_sha256=hashlib.sha256((ROOT/'config/finalization.json').read_bytes()).hexdigest(),
                 finalization_code_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                 final_strategy=chosen,strategy_threshold=config['strategy_threshold'] if chosen!='flat' else None,
                 strategy_pnl=float(chosen_strategy.pnl),strategy_drawdown=float(chosen_strategy.drawdown),
                 strategy_stress_pnl=float(chosen_strategy.stress_pnl),legacy_strategy_pnl=previous_pnl,
+                strategy_stress_drawdown=float(chosen_strategy.stress_drawdown),
+                strategy_profitable_blocks=int(chosen_strategy.profitable_blocks),
+                strategy_losing_blocks=int(chosen_strategy.losing_blocks),
+                strategy_active_weeks=int(chosen_strategy.trades),
+                strategy_largest_positive_fraction=float(chosen_strategy.largest_positive_fraction),
+                strategy_stress_without_best_block=float(chosen_strategy.stress_without_best_block),
+                strategy_stress_first12=float(chosen_strategy.stress_first12),strategy_stress_recent8=float(chosen_strategy.stress_recent8),
+                final_active_weeks=int(np.count_nonzero(positions)),
+                strategy_error_multiplier=.5 if 'half' in chosen else 1.,
+                strategy_max_active_weeks=1 if 'cap1' in chosen else H,
                 research_interval_coverage=research_coverage,interval_coverage=float(intervals.covered.mean()),interval_n=len(intervals),
                 final_model_mean_smape=float(selected['mean']),final_naive_mean_smape=float(naive['mean']),
                 final_model_recent8_smape=float(selected.recent8),final_naive_recent8_smape=float(naive.recent8),
                 final_worst_smape=float(selected.worst),
                 model_decision='Incumbent retained because neither conservative blend passed all no-regression guards.' if name==config['incumbent'] else 'Conservative candidate passed all declared development guards.',
-                strategy_decision='No active rule passed the positive-P&L, stress and concentration guards; fixed zero positions.' if chosen=='flat' else 'Active rule passed declared historical development guards.',
+                strategy_decision='No active rule passed the positive-P&L, stress and concentration guards; fixed zero positions.' if chosen=='flat' else 'Active rule passed the original positive-P&L, stress and concentration guards; at most one active week per block.',
                 selection_rule='Frozen final candidate selected by bounded development comparison; no weekly competition reselection.',
                 evaluation_note='Historical development comparison, not an independent test. Trading profits are not guaranteed.')
     (out/'run_metadata.json').write_text(json.dumps(meta,ensure_ascii=False,indent=2))
@@ -212,7 +255,10 @@ def write_final_report(meta,comparison,strategies):
     for r in strategies.itertuples():
         lines.append(f'| {r.rule} | {r.pnl:.5f} | {r.drawdown:.5f} | {r.stress_pnl:.5f} | {r.trades} |')
     lines+=['',meta['strategy_decision'],
-            'Нулевая позиция означает отсутствие сделок и нулевой P&L, а не прибыльную торговую систему.',
+            f"Выбранное правило: {meta['final_strategy']}; прибыльных блоков {meta.get('strategy_profitable_blocks',0)}, убыточных {meta.get('strategy_losing_blocks',0)}; активных недель {meta.get('strategy_active_weeks',0)}.",
+            f"Доля лучшего блока в положительных результатах: {meta.get('strategy_largest_positive_fraction',0):.1%}. Стресс-P&L без лучшего блока: {meta.get('strategy_stress_without_best_block',0):+.5f}.",
+            'Для confidence_half_cap1 порог равен максимуму из 0,5% цены и половины медианной прошлой ошибки изменения. Разрешена максимум одна активная неделя, выбранная по прогнозному сигналу, без будущего P&L.',
+            'Если выбрана нулевая позиция, это отсутствие сделок. Для активной стратегии положительный исторический результат не гарантирует будущую прибыль.',
             'Затраты 0,1% — исследовательская чувствительность, не правило официального скорера.',
             f"Для замороженной модели покрытие интервалов: {meta['interval_coverage']:.1%} на {meta['interval_n']} наблюдениях.",
             'Уровень номинально 90%; ширина и зависимость ошибок ограничивают практическую интерпретацию.',

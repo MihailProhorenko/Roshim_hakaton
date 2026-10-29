@@ -73,6 +73,9 @@ with tabs[1]:
     st.caption('P&L — условные единицы индекса, без комиссий и объёмов. Пропущенные недельные переходы исключены. Это не денежная экономия предприятия.')
     if meta.get('final_strategy')=='flat':
         st.info('Финальная стратегия: все позиции нулевые. Это отсутствие сделок с нулевым P&L, а не прибыльная торговая система. Активные варианты не прошли проверку устойчивости.')
+    elif meta.get('final_strategy')=='confidence_half_cap1':
+        st.info('Финальная стратегия: фильтр исторической ошибки, максимум одна активная неделя из 13. В текущем файле — одна короткая позиция, затем вне рынка. Историческая прибыль положительна, но не гарантирует будущую.')
+        st.write(f"Исторических активных недель: {meta['strategy_active_weeks']}; прибыльных блоков {meta['strategy_profitable_blocks']}, убыточных {meta['strategy_losing_blocks']}. После условных затрат: {meta['strategy_stress_pnl']:+.5f}; после исключения лучшего блока: {meta['strategy_stress_without_best_block']:+.5f}.")
     if (ART/'final_strategy_comparison.csv').exists():
         st.dataframe(pd.read_csv(ART/'final_strategy_comparison.csv'),hide_index=True,width='stretch')
     st.dataframe(pd.read_csv(ART/'interval_metrics.csv'),hide_index=True)
