@@ -18,6 +18,13 @@ def main():
     _,_,y,wide=load(path)
     submission=pd.read_csv(out/'forecast.csv',sep=';',encoding='utf-8-sig')
     positions=pd.read_csv(out/'strategy.csv',sep=';',encoding='utf-8-sig')
+    frozen=out/'freeze_manifest.json'
+    if frozen.exists():
+        freeze=json.loads(frozen.read_text())
+        for name,digest in freeze['official_csv_sha256'].items():
+            assert hashlib.sha256((out/name).read_bytes()).hexdigest()==digest,name
+        for name,digest in freeze['decision_source_sha256'].items():
+            assert hashlib.sha256((ROOT/name).read_bytes()).hexdigest()==digest,name
     validate(submission,positions)
     assert (out/'forecast.csv').read_bytes().startswith(b'\xef\xbb\xbf')
     assert (out/'strategy.csv').read_bytes().startswith(b'\xef\xbb\xbf')

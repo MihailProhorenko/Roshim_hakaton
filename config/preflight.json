@@ -1,0 +1,13 @@
+{
+  "purpose": "diagnostics only; no parameter selection or strategy changes",
+  "cases": [
+    {"name":"frozen", "alpha":0.5, "floor":0.005},
+    {"name":"alpha_minus_10pct", "alpha":0.45, "floor":0.005},
+    {"name":"alpha_plus_10pct", "alpha":0.55, "floor":0.005},
+    {"name":"floor_minus_10pct", "alpha":0.5, "floor":0.0045},
+    {"name":"floor_plus_10pct", "alpha":0.5, "floor":0.0055}
+  ],
+  "outlier_removal": "remove best 1 and 2 blocks; report gross and stressed, no strategy retuning",
+  "stress_cost": 0.001,
+  "deadline_moscow": "2026-10-29 21:00"
+}

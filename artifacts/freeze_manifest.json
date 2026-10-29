@@ -1,0 +1,17 @@
+{
+  "frozen_at_utc": "2026-10-29T16:32:30.284805+00:00",
+  "strategy_baseline_commit": "7fcaa5258d84fc6f0a92b6ba02b137d987d945ad",
+  "official_csv_sha256": {
+    "forecast.csv": "b3aa37f60c71ee215c97299040d95b0abd7f82ff7500d727c2a30592039a9ff6",
+    "strategy.csv": "10d98103aa8933215950e3c0fc5ef0d2c2d4e26a73fbad8711c92672a1203258"
+  },
+  "decision_source_sha256": {
+    "config/finalization.json": "988fb5ec82d4eb95389bb1c9c0611fa87d6d624840164f1eb241a70b96f39013",
+    "src/finalize.py": "7d01370fcc7bf1edf33700533d73a660264c421c8c0cef2bc6fa988bafa35c62",
+    "src/models.py": "d40fb275933e2a4521567246c74ed336190abff2bc871b8f140312b85fbaa7be",
+    "src/baseline.py": "49094c26a07e8531dcd4cc95ecd28832dd9d3420ed530c6ed68d2e02687444d8",
+    "src/submission.py": "3c9724257a999c0731c4837d7cee1bae4309c8345532da3541cd6e15983475e1"
+  },
+  "policy": "No more parameter search. CSV files remain identical to the active strategy release. Diagnostics disclose limitations.",
+  "submission": "User will transmit and obtain organizer receipt."
+}

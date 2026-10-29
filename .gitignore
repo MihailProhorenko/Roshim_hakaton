@@ -27,5 +27,9 @@ artifacts/*
 !artifacts/final_model_folds.csv
 !artifacts/final_strategy_comparison.csv
 !artifacts/final_strategy_folds.csv
+!artifacts/preflight.json
+!artifacts/preflight_sensitivity.csv
+!artifacts/preflight_outliers.csv
+!artifacts/freeze_manifest.json
 deliverables/
 .streamlit/

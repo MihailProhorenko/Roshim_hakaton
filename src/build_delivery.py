@@ -6,6 +6,7 @@ import subprocess
 import zipfile
 import os
 import shutil
+import sys
 
 os.environ.setdefault('MPLCONFIGDIR','/tmp/pvc-matplotlib')
 import matplotlib
@@ -25,6 +26,22 @@ from reportlab.lib.pagesizes import A4
 ROOT=Path(__file__).resolve().parents[1]
 ART=ROOT/'artifacts'
 OUT=ROOT/'deliverables'
+
+
+def ensure_audit():
+    # A fresh source-only checkout must be able to build the same delivery.
+    required=['preflight.json','preflight_sensitivity.csv','preflight_outliers.csv']
+    if not all((ART/name).exists() for name in required):
+        subprocess.run([sys.executable,str(ROOT/'src/preflight.py')],cwd=ROOT,check=True)
+    frozen=ART/'freeze_manifest.json'
+    if not frozen.exists():
+        record={
+            'official_csv_sha256':{name:hashlib.sha256((ART/name).read_bytes()).hexdigest() for name in ['forecast.csv','strategy.csv']},
+            'decision_source_sha256':{name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in ['config/finalization.json','src/finalize.py','src/models.py','src/baseline.py','src/submission.py']},
+            'policy':'Freeze after diagnostics; no further parameter optimization.',
+            'submission':'User transmits and obtains organizer confirmation.'}
+        frozen.write_text(json.dumps(record,ensure_ascii=False,indent=2))
+    subprocess.run([sys.executable,str(ROOT/'src/validate_artifacts.py')],cwd=ROOT,check=True)
 
 
 def narrative(meta):
@@ -80,6 +97,7 @@ def build_pdf(meta):
     p(text['strategy'])
     p('Сигнал — прогнозное недельное изменение, превышающее максимум из 0,5% последней цены и половины медианной исторической ошибки изменения для этого горизонта. Ошибки берутся только из завершённых блоков. Из допущенных сигналов выбирается один с максимальным отношением изменения к порогу; будущий P&L не используется.')
     p(f"На 20 блоках: {meta.get('strategy_active_weeks',0)} активных недель, {meta.get('strategy_profitable_blocks',0)} прибыльных и {meta.get('strategy_losing_blocks',0)} убыточных блоков. Доля лучшего блока в положительных результатах {meta.get('strategy_largest_positive_fraction',0):.1%}. С затратами после исключения лучшего блока остаётся {meta.get('strategy_stress_without_best_block',0):+.5f}. Это проверка на уже исследованной истории, не независимое доказательство будущей прибыли.")
+    p('При отдельных изменениях порогов на ±10% стресс-P&L остаётся положительным. Без двух лучших блоков: +0,01527 до затрат, −0,01365 после затрат. Следовательно, зависимость от удачных периодов сохраняется; универсальная устойчивость не заявляется.')
     p('Исторический buy & hold: −0,82443 условных единиц. Индекс k не переводится в рубли; объёмы и официальные комиссии не заданы. Условные затраты 0,1% на оборот — исследовательская чувствительность, не правило жюри. Число сделок невелико; будущая прибыль не гарантируется.')
     h('Бизнес-применение и ограничения')
     p('Инструмент показывает ценовой ориентир и диапазон неопределённости для обсуждения сроков продаж, закупок и планирования. DAP Достык не заменяет конкретную контрактную цену. Модельная важность признака не доказывает причинность. Основные ограничения — смена рыночных режимов, небольшое число временных блоков и отсутствие точного времени публикации котировок.')
@@ -135,8 +153,8 @@ def build_slides(meta):
     s.shapes.add_picture(str(chart),Inches(1.0),Inches(1.45),width=Inches(11.2),height=Inches(3.8))
     box(s,.7,5.35,11.8,1.2,'Уточнение t+2 после t+1: 4,44% → 2,87% sMAPE на 15 парах.\nЭто отдельное исследование: конкурсный прогноз новых фактов не получает.',19)
     s=slide('Риск и готовый инструмент',5)
-    box(s,.7,1.45,11.8,3.7,f"Интервалы: покрытие {meta['interval_coverage']:.1%}, широкие, без гарантии.\nСтратегия: {meta['strategy_pnl']:+.3f}; после условных затрат {meta['strategy_stress_pnl']:+.3f}.\nМаксимум одна активная неделя на 13 недель.\n{meta.get('strategy_profitable_blocks',0)} прибыльных блоков; лучший — {meta.get('strategy_largest_positive_fraction',0):.0%} положительного результата.\nЭто историческая оценка; будущая прибыль не гарантируется.",23)
-    box(s,.7,5.6,11.8,1.,'Следующий шаг после конкурса: новые котировки, устойчивый выбор режима и проверка экономической пользы.',22,True,blue)
+    box(s,.7,1.45,11.8,3.7,f"Интервалы: покрытие {meta['interval_coverage']:.1%}, широкие, без гарантии.\nСтратегия: {meta['strategy_pnl']:+.3f}; после условных затрат {meta['strategy_stress_pnl']:+.3f}.\nМаксимум одна активная неделя на 13 недель.\n{meta.get('strategy_profitable_blocks',0)} прибыльных блоков, {meta.get('strategy_losing_blocks',0)} убыточных; выборка небольшая.\nПорог ±10%: плюс; без 2 лучших с затратами: минус.",23)
+    box(s,.7,5.6,11.8,1.,'Будущая прибыль не гарантируется. Следующий шаг — проверка на новых котировках.',22,True,blue)
     prs.save(OUT/'presentation.pptx')
 
 
@@ -169,7 +187,7 @@ validation/ — сводные метрики и протокол финальн
                 files['code/'+str(p.relative_to(ROOT))]=p
     for name in ['README.md','requirements.txt','app.py','.python-version','.gitignore','data/raw/.gitkeep']:
         files['code/'+name]=ROOT/name
-    for name in ['run_metadata.json','final_model_comparison.csv','final_strategy_comparison.csv','final_strategy_folds.csv','interval_metrics.csv','revision_metrics.csv']:
+    for name in ['run_metadata.json','final_model_comparison.csv','final_strategy_comparison.csv','final_strategy_folds.csv','interval_metrics.csv','revision_metrics.csv','preflight.json','preflight_sensitivity.csv','preflight_outliers.csv','freeze_manifest.json']:
         files['validation/'+name]=ART/name
     manifest={name:hashlib.sha256(p.read_bytes()).hexdigest() for name,p in sorted(files.items())}
     (OUT/'manifest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2))
@@ -184,6 +202,7 @@ if __name__=='__main__':
     meta=json.loads((ART/'run_metadata.json').read_text())
     if not meta.get('finalized'):
         raise SystemExit('Run src/finalize.py before packaging')
+    ensure_audit()
     build_pdf(meta);build_slides(meta)
     shutil.copy2(OUT/'report.pdf',ROOT/'docs/report.pdf')
     shutil.copy2(OUT/'presentation.pptx',ROOT/'docs/presentation.pptx')
