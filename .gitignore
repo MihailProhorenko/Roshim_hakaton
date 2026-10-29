@@ -23,4 +23,8 @@ artifacts/*
 !artifacts/error_by_horizon.svg
 !artifacts/forecast_revision.svg
 !artifacts/feature_importance.csv
+!artifacts/final_model_comparison.csv
+!artifacts/final_model_folds.csv
+!artifacts/final_strategy_comparison.csv
+deliverables/
 .streamlit/

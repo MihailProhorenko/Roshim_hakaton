@@ -7,6 +7,7 @@ import pandas as pd
 from baseline import ROOT, load, H
 from models import forecast
 from submission import validate
+from finalize import final_predict
 
 
 def main():
@@ -28,8 +29,14 @@ def main():
     assert np.isfinite(submission.forecast).all() and (submission.forecast>0).all()
     expected=pd.date_range(y.index[-1]+pd.Timedelta(days=7),periods=H,freq='7D')
     assert submission.week_start.tolist()==expected.strftime('%Y-%m-%d').tolist()
-    reproduction=forecast(meta['model'],y,wide)
+    reproduction=final_predict(meta['model'],y,wide)
     np.testing.assert_allclose(reproduction,submission.forecast,rtol=1e-10)
+    if meta.get('finalized'):
+        assert hashlib.sha256((ROOT/'config/finalization.json').read_bytes()).hexdigest()==meta['finalization_config_sha256']
+        assert hashlib.sha256((ROOT/'src/finalize.py').read_bytes()).hexdigest()==meta['finalization_code_sha256']
+        if meta['final_strategy']=='flat':
+            assert positions.position.eq(0).all()
+            assert meta['strategy_pnl']==0 and meta['strategy_drawdown']==0
     balanced=pd.read_csv(out/'balanced_horizon_metrics.csv')
     assert balanced.groupby('model').n.nunique().eq(1).all()
     revisions=pd.read_csv(out/'revision_predictions.csv')

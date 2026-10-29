@@ -13,7 +13,7 @@ st.caption('Сдача: 29 октября, 21:00 по Москве. Прогно
 required=['run_metadata.json','forecast_details.csv','target_history.csv','prequential_scores.csv',
           'horizon_metrics.csv','balanced_horizon_metrics.csv','revision_metrics.csv','interval_metrics.csv','ablation_metrics.csv']
 if not all((ART/name).exists() for name in required):
-    st.info('Для подготовки результатов выполните python src/pipeline.py в окружении проекта.')
+    st.info('Для подготовки финальных результатов выполните python src/finalize.py --rebuild в окружении проекта.')
     st.stop()
 meta=json.loads((ART/'run_metadata.json').read_text())
 future=pd.read_csv(ART/'forecast_details.csv',parse_dates=['observation_date'])
@@ -44,15 +44,15 @@ with tabs[0]:
 
 with tabs[1]:
     st.subheader('Как меняется ошибка с горизонтом')
-    st.write('Каждый исторический прогноз фиксируется на все 13 недель. Выбор модели использует только уже завершённые проверочные блоки.')
+    st.write('Каждый исторический прогноз фиксируется на все 13 недель. Итоговая конфигурация заморожена после ограниченного сравнения на исследованной истории; конкурсный результат неизвестен.')
     a,b=st.columns(2)
-    a.metric('Последовательный выбор · sMAPE',f'{comparison.adaptive_smape.mean():.2f}%')
-    b.metric('Naive на тех же блоках · sMAPE',f'{comparison.naive_smape.mean():.2f}%')
+    a.metric('Финальная модель · 20 блоков',f"{meta.get('final_model_mean_smape',comparison.adaptive_smape.mean()):.2f}%")
+    b.metric('Naive · те же 20 блоков',f"{meta.get('final_naive_mean_smape',comparison.naive_smape.mean()):.2f}%")
     recent=pd.read_csv(ART/'model_selection.csv').set_index('model').smape
     gap=float(recent['naive']-recent[meta['model']])
     st.write(f'Отрыв выбранной модели от naive на последних восьми окнах выбора: {gap:+.3f} п.п. Положительное значение означает меньший sMAPE. Это исторический результат, не конкурсный балл.')
-    if comparison.adaptive_smape.mean()>=comparison.naive_smape.mean():
-        st.warning('Переключение моделей на этой исторической проверке уступило naive. Улучшение точности не подтверждено.')
+    if meta.get('final_model_mean_smape',comparison.adaptive_smape.mean())>=meta.get('final_naive_mean_smape',comparison.naive_smape.mean()):
+        st.warning('Преимущество недавних окон не сохраняется на всей проверке. Устойчивое превосходство над naive не подтверждено.')
     balanced=st.toggle('Одинаковые блоки для всех горизонтов',value=True)
     table=pd.read_csv(ART/('balanced_horizon_metrics.csv' if balanced else 'horizon_metrics.csv'))
     available=list(dict.fromkeys(['adaptive_policy','naive',meta['model'],'catboost_mae_external']))
@@ -71,6 +71,10 @@ with tabs[1]:
     c.metric('P&L buy & hold',f"{meta['buy_hold_pnl']:.4f}")
     st.write(f"Максимальная просадка стратегии: {meta['strategy_drawdown']:.4f}; buy & hold: {meta['buy_hold_drawdown']:.4f}.")
     st.caption('P&L — условные единицы индекса, без комиссий и объёмов. Пропущенные недельные переходы исключены. Это не денежная экономия предприятия.')
+    if meta.get('final_strategy')=='flat':
+        st.info('Финальная стратегия: все позиции нулевые. Это отсутствие сделок с нулевым P&L, а не прибыльная торговая система. Активные варианты не прошли проверку устойчивости.')
+    if (ART/'final_strategy_comparison.csv').exists():
+        st.dataframe(pd.read_csv(ART/'final_strategy_comparison.csv'),hide_index=True,width='stretch')
     st.dataframe(pd.read_csv(ART/'interval_metrics.csv'),hide_index=True)
 
 with tabs[2]:

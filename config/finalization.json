@@ -1,0 +1,32 @@
+{
+  "experiment": "bounded_finalization_2026-10-29",
+  "incumbent": "catboost_mae_external",
+  "candidates": [
+    "conservative_25",
+    "conservative_50"
+  ],
+  "base_model": "catboost_mae",
+  "evaluation": "same 20 completed historical blocks; development evidence, not independent test",
+  "acceptance": {
+    "mean_smape_no_worse_than_incumbent": true,
+    "worst_block_no_worse_than_incumbent": true,
+    "median_smape_tolerance_pp": 0.0,
+    "recent8_smape_tolerance_pp": 0.0,
+    "tie_break": "lowest worst-block error, then lowest mean"
+  },
+  "strategy_candidates": [
+    "flat",
+    "threshold",
+    "agreement",
+    "confidence"
+  ],
+  "strategy_threshold": 0.005,
+  "strategy_acceptance": "positive net P&L, at least 3 profitable blocks, no single block > half total positive gains; else flat",
+  "strategy_cost_sensitivity": [
+    0.0,
+    0.001
+  ],
+  "commission_note": "Hypothetical turnover cost for sensitivity only; official scorer has not specified costs",
+  "freeze_deadline_moscow": "2026-10-29 20:00",
+  "decision_note": "Preserve incumbent unless a candidate does not worsen any checked summary, including the recent selection windows."
+}

@@ -8,3 +8,5 @@ streamlit==1.55.0
 catboost==1.2.8
 matplotlib==3.10.8
 plotly==7.1.0
+python-pptx==1.0.2
+reportlab==4.4.9
